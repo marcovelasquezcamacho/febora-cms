@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://febora-cms-production.up.railway.app'
 
 const tipoColors: Record<string, { bg: string; border: string; badge: string; color: string }> = {
   info:        { bg: 'rgba(30,80,180,0.15)',  border: 'rgba(30,80,180,0.35)',  badge: '#7EA8E5', color: '#7EA8E5' },

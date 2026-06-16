@@ -44,7 +44,7 @@ export default function JugadoresPage() {
       const { data } = await api.post('/api/media/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      const fullUrl = `http://127.0.0.1:8000${data.url}`
+      const fullUrl = `https://febora-cms-production.up.railway.app${data.url}`
       setForm(prev => ({ ...prev, foto_url: fullUrl }))
       notify('Foto subida correctamente')
     } catch {

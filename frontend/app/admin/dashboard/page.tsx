@@ -51,7 +51,7 @@ export default function DashboardPage() {
             { label: 'Gestionar Jugadores', href: '/admin/jugadores' },
             { label: 'Gestionar Noticias', href: '/admin/noticias' },
             { label: 'Gestionar Logros', href: '/admin/logros' },
-            { label: 'Ver API Docs', href: 'http://127.0.0.1:8000/docs' },
+            { label: 'Ver API Docs', href: 'https://febora-cms-production.up.railway.app/docs' },
           ].map(link => (
             <a key={link.label} href={link.href} target={link.href.startsWith('http') ? '_blank' : '_self'}
               style={{ background: '#1C1C1C', border: '1px solid rgba(255,255,255,0.1)', color: '#888', padding: '0.5rem 1rem', borderRadius: '6px', fontSize: '0.78rem', textDecoration: 'none', letterSpacing: '0.06em' }}>

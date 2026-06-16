@@ -51,7 +51,7 @@ export default function PopupsPage() {
       const { data } = await api.post('/api/media/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      setForm(prev => ({ ...prev, imagen_url: `http://127.0.0.1:8000${data.url}` }))
+      setForm(prev => ({ ...prev, imagen_url: `https://febora-cms-production.up.railway.app${data.url}` }))
       notify('Imagen subida correctamente')
     } catch {
       notify('Error al subir imagen')

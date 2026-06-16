@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://febora-cms-production.up.railway.app'
 
 const categoriaLabels: Record<string, string> = {
   todos: 'Todos',

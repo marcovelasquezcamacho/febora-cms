@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://febora-cms-production.up.railway.app'
+
 const allNavItems = [
   { label: 'Dashboard',  href: '/admin/dashboard',  icon: '⊞', roles: ['superadmin', 'editor'] },
   { label: 'Hero',       href: '/admin/hero',        icon: '🖼', roles: ['superadmin', 'editor'] },
@@ -13,7 +15,7 @@ const allNavItems = [
   { label: 'Popups',     href: '/admin/popups',      icon: '💬', roles: ['superadmin', 'editor'] },
   { label: 'Contacto',   href: '/admin/contacto',    icon: '✉️',  roles: ['superadmin', 'editor'] },
   { label: 'Usuarios',   href: '/admin/usuarios',    icon: '🔑', roles: ['superadmin'] },
-  { label: 'API Docs',   href: 'http://127.0.0.1:8000/docs', icon: '📋', roles: ['superadmin', 'editor'] },
+  { label: 'API Docs',   href: `${API}/docs`,        icon: '📋', roles: ['superadmin', 'editor'] },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -35,7 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const checkMensajes = async () => {
     try {
       const token = localStorage.getItem('febora_token')
-      const res = await fetch('http://127.0.0.1:8000/api/contacto/?leido=false', {
+      const res = await fetch(`${API}/api/contacto/?leido=false`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       if (res.ok) {
