@@ -3,7 +3,7 @@ import type { Metadata } from 'next'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000'
+const API = process.env.NEXT_PUBLIC_API_URL || 'https://febora-cms-production.up.railway.app'
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
 async function getJugador(id: string) {
