@@ -7,15 +7,17 @@ from app.core.security import decode_token
 
 router = APIRouter()
 
-cloudinary.config(
-    cloud_name=os.getenv("dthg89way"),
-    api_key=os.getenv("362831951512922"),
-    api_secret=os.getenv("DwGL0nCaBq_dM1qYQRdsn8oCIMk"),
-    secure=True
-)
-
 ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"]
 MAX_SIZE_MB = 5
+
+def get_cloudinary():
+    cloudinary.config(
+        cloud_name=os.getenv("dthg89way"),
+        api_key=os.getenv("362831951512922"),
+        api_secret=os.getenv("DwGL0nCaBq_dM1qYQRdsn8oCIMk"),
+        secure=True
+    )
+    return cloudinary
 
 @router.post("/upload", summary="Subir imagen a Cloudinary")
 async def upload_image(
@@ -29,8 +31,10 @@ async def upload_image(
     if len(contents) > MAX_SIZE_MB * 1024 * 1024:
         raise HTTPException(400, f"El archivo no puede superar {MAX_SIZE_MB}MB")
 
+    cloud = get_cloudinary()
+
     try:
-        result = cloudinary.uploader.upload(
+        result = cloud.uploader.upload(
             contents,
             folder="febora",
             public_id=f"febora_{uuid.uuid4().hex[:8]}",
@@ -52,7 +56,8 @@ async def upload_image(
 @router.delete("/upload/{public_id}", summary="Eliminar imagen de Cloudinary")
 async def delete_image(public_id: str, payload: dict = Depends(decode_token)):
     try:
-        cloudinary.uploader.destroy(f"febora/{public_id}")
+        cloud = get_cloudinary()
+        cloud.uploader.destroy(f"febora/{public_id}")
         return {"mensaje": "Imagen eliminada"}
     except Exception as e:
         raise HTTPException(500, f"Error al eliminar: {str(e)}")
