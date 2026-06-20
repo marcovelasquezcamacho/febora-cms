@@ -43,7 +43,7 @@ export default function HeroAdminPage() {
       const { data } = await api.post('/api/media/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      const fullUrl = `https://febora-cms-production.up.railway.app${data.url}`
+      const fullUrl = data.url
       setForm(prev => ({ ...prev, imagen_fondo_url: fullUrl }))
       notify('Imagen subida correctamente')
     } catch {

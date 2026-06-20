@@ -49,7 +49,7 @@ export default function SponsorsAdminPage() {
       const { data } = await api.post('/api/media/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      setForm(prev => ({ ...prev, logo_url: `https://febora-cms-production.up.railway.app${data.url}` }))
+      setForm(prev => ({ ...prev, logo_url: data.url }))
       notify('Logo subido correctamente')
     } catch {
       notify('Error al subir logo')

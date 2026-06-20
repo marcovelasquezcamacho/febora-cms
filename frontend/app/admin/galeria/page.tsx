@@ -51,7 +51,7 @@ export default function GaleriaAdminPage() {
       const { data } = await api.post('/api/media/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      setForm(prev => ({ ...prev, imagen_url: `https://febora-cms-production.up.railway.app${data.url}` }))
+      setForm(prev => ({ ...prev, imagen_url: data.url }))
       notify('Imagen subida correctamente')
     } catch {
       notify('Error al subir imagen')
