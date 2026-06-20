@@ -31,14 +31,17 @@ async def upload_image(
     print(f"DEBUG - api_secret present: {bool(api_secret)}")
 
     if not cloud_name or not api_key or not api_secret:
-        raise HTTPException(500, f"Variables de Cloudinary no configuradas: cloud={cloud_name}, key={api_key}")
+        raise HTTPException(500, f"Variables de Cloudinary no configuradas")
+
+    # ✅ Configurar globalmente ANTES de subir
+    cloudinary.config(
+    cloud_name=cloud_name,
+    api_key=api_key,
+    api_secret=api_secret
 
     try:
         result = cloudinary.uploader.upload(
             contents,
-            cloud_name=cloud_name,
-            api_key=api_key,
-            api_secret=api_secret,
             folder="febora",
             public_id=f"febora_{uuid.uuid4().hex[:8]}",
             overwrite=True,
