@@ -60,3 +60,12 @@ async def delete_image(public_id: str, payload: dict = Depends(decode_token)):
         return {"mensaje": "Imagen eliminada"}
     except Exception as e:
         raise HTTPException(500, f"Error al eliminar: {str(e)}")
+
+# 👇 Agrega esto al final
+@router.get("/debug-env")
+async def debug_env():
+    return {
+        "cloud_name": os.getenv("CLOUDINARY_CLOUD_NAME"),
+        "api_key": os.getenv("CLOUDINARY_API_KEY"),
+        "api_secret_present": bool(os.getenv("CLOUDINARY_API_SECRET")),
+    }
