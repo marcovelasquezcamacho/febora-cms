@@ -22,22 +22,18 @@ async def upload_image(
     if len(contents) > MAX_SIZE_MB * 1024 * 1024:
         raise HTTPException(400, f"El archivo no puede superar {MAX_SIZE_MB}MB")
 
-    cloud_name=os.getenv("dthg89way")
+    cloud_name=os.getenv("dthg89way"),
     api_key=os.getenv("362831951512922")
     api_secret=os.getenv("DwGL0nCaBq_dM1qYQRdsn8oCIMk")
 
-    print(f"DEBUG - cloud_name: {cloud_name}")
-    print(f"DEBUG - api_key: {api_key}")
-    print(f"DEBUG - api_secret present: {bool(api_secret)}")
-
     if not cloud_name or not api_key or not api_secret:
-        raise HTTPException(500, f"Variables de Cloudinary no configuradas")
+        raise HTTPException(500, "Variables de Cloudinary no configuradas")
 
-    # ✅ Configurar globalmente ANTES de subir
     cloudinary.config(
-    cloud_name=cloud_name,
-    api_key=api_key,
-    api_secret=api_secret
+        cloud_name=cloud_name,
+        api_key=api_key,
+        api_secret=api_secret
+    )
 
     try:
         result = cloudinary.uploader.upload(
@@ -55,6 +51,7 @@ async def upload_image(
         }
     except Exception as e:
         raise HTTPException(500, f"Error al subir imagen: {str(e)}")
+
 
 @router.delete("/upload/{public_id}", summary="Eliminar imagen de Cloudinary")
 async def delete_image(public_id: str, payload: dict = Depends(decode_token)):
