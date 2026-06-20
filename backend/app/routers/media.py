@@ -22,9 +22,9 @@ async def upload_image(
     if len(contents) > MAX_SIZE_MB * 1024 * 1024:
         raise HTTPException(400, f"El archivo no puede superar {MAX_SIZE_MB}MB")
 
-    cloud_name=os.getenv("dthg89way"),
-    api_key=os.getenv("362831951512922")
-    api_secret=os.getenv("DwGL0nCaBq_dM1qYQRdsn8oCIMk")
+    cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME")
+    api_key = os.getenv("CLOUDINARY_API_KEY")
+    api_secret = os.getenv("CLOUDINARY_API_SECRET")
 
     if not cloud_name or not api_key or not api_secret:
         raise HTTPException(500, "Variables de Cloudinary no configuradas")
