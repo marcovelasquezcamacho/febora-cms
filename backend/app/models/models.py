@@ -73,6 +73,7 @@ class Jugador(Base):
     foto_url          = Column(String(500))
     nacionalidad      = Column(String(80), default="Bolivia")
     orden             = Column(Integer, default=0)
+    categoria         = Column(String(50), default="internacional")
     activo            = Column(Boolean, default=True)
     created_by        = Column(UUID(as_uuid=True), ForeignKey("admin_users.id"))
     created_at        = Column(DateTime, default=datetime.utcnow)
