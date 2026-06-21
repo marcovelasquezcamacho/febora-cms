@@ -3,11 +3,19 @@ import { useEffect, useState, useRef } from 'react'
 import AdminLayout from '@/components/AdminLayout'
 import { api } from '@/lib/api'
 
+const CATEGORIAS = [
+  { value: 'internacional', label: 'Internacional', color: '#F2A900' },
+  { value: 'infantil',      label: 'Infantil',      color: '#4CAF7D' },
+  { value: 'juvenil',       label: 'Juvenil',       color: '#7EA8E5' },
+  { value: 'senior',        label: 'Senior',        color: '#C8102E' },
+  { value: 'master',        label: 'Master',        color: '#CD7F32' },
+]
+
 const emptyForm = {
   nombre: '', apellido: '', iniciales: '', ranking_etiqueta: '',
   ranking_color: '#F2A900', tag_texto: '', tag_color: 'red',
   descripcion_corta: '', biografia: '', foto_url: '',
-  nacionalidad: 'Bolivia', orden: 0, activo: true
+  nacionalidad: 'Bolivia', categoria: 'internacional', orden: 0, activo: true
 }
 
 export default function JugadoresPage() {
@@ -18,6 +26,7 @@ export default function JugadoresPage() {
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [msg, setMsg] = useState('')
+  const [filtroCat, setFiltroCat] = useState('todos')
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { loadJugadores() }, [])
@@ -44,8 +53,7 @@ export default function JugadoresPage() {
       const { data } = await api.post('/api/media/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      const fullUrl = data.url
-      setForm(prev => ({ ...prev, foto_url: fullUrl }))
+      setForm(prev => ({ ...prev, foto_url: data.url }))
       notify('Foto subida correctamente')
     } catch {
       notify('Error al subir la foto')
@@ -99,17 +107,41 @@ export default function JugadoresPage() {
 
   const lbl = { display: 'block', fontSize: '0.68rem', letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: '#555', marginBottom: '0.35rem' }
 
+  const catInfo = (val: string) => CATEGORIAS.find(c => c.value === val) || CATEGORIAS[0]
+
+  const jugadoresFiltrados = filtroCat === 'todos'
+    ? jugadores
+    : jugadores.filter(j => j.categoria === filtroCat)
+
   return (
     <AdminLayout>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
         <div>
           <h1 style={{ fontFamily: 'serif', fontSize: '2rem', letterSpacing: '0.06em', color: '#F0EEE8', marginBottom: '0.2rem' }}>JUGADORES</h1>
-          <p style={{ fontSize: '0.78rem', color: '#555' }}>Gestión de la selección nacional</p>
+          <p style={{ fontSize: '0.78rem', color: '#555' }}>{jugadores.length} jugadores en total</p>
         </div>
         <button onClick={() => { setForm(emptyForm); setEditId(null); setShowForm(true) }}
-          style={{ background: '#C8102E', color: '#fff', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, letterSpacing: '0.08em' }}>
+          style={{ background: '#C8102E', color: '#fff', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>
           + Nuevo jugador
         </button>
+      </div>
+
+      {/* FILTRO POR CATEGORÍA */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <button onClick={() => setFiltroCat('todos')}
+          style={{ background: filtroCat === 'todos' ? '#C8102E' : 'transparent', color: filtroCat === 'todos' ? '#fff' : '#888', border: `1px solid ${filtroCat === 'todos' ? '#C8102E' : 'rgba(255,255,255,0.12)'}`, padding: '0.35rem 1rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>
+          Todos ({jugadores.length})
+        </button>
+        {CATEGORIAS.map(cat => {
+          const count = jugadores.filter(j => j.categoria === cat.value).length
+          if (count === 0) return null
+          return (
+            <button key={cat.value} onClick={() => setFiltroCat(cat.value)}
+              style={{ background: filtroCat === cat.value ? `${cat.color}20` : 'transparent', color: filtroCat === cat.value ? cat.color : '#888', border: `1px solid ${filtroCat === cat.value ? cat.color : 'rgba(255,255,255,0.12)'}`, padding: '0.35rem 1rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>
+              {cat.label} ({count})
+            </button>
+          )
+        })}
       </div>
 
       {/* TABLA */}
@@ -117,48 +149,55 @@ export default function JugadoresPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              {['Foto', 'Jugador', 'Iniciales', 'Ranking', 'Estado', 'Orden', 'Acciones'].map(h => (
+              {['Foto', 'Jugador', 'Categoría', 'Ranking', 'Estado', 'Orden', 'Acciones'].map(h => (
                 <th key={h} style={{ padding: '0.75rem 1rem', textAlign: 'left', fontSize: '0.65rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#555', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {jugadores.map(j => (
-              <tr key={j.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <td style={{ padding: '0.85rem 1rem' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '6px', overflow: 'hidden', background: 'linear-gradient(145deg, #1a0508, #3d0f17)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {j.foto_url
-                      ? <img src={j.foto_url} alt={j.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
-                      : <span style={{ fontFamily: 'serif', fontSize: '0.8rem', color: 'rgba(255,255,255,0.2)' }}>{j.iniciales}</span>
-                    }
-                  </div>
-                </td>
-                <td style={{ padding: '0.85rem 1rem' }}>
-                  <div style={{ color: '#F0EEE8', fontWeight: 500, fontSize: '0.84rem' }}>{j.nombre} {j.apellido}</div>
-                  <div style={{ color: '#555', fontSize: '0.72rem', marginTop: '0.1rem' }}>{j.nacionalidad}</div>
-                </td>
-                <td style={{ padding: '0.85rem 1rem', fontFamily: 'serif', fontSize: '1.1rem', color: '#555' }}>{j.iniciales}</td>
-                <td style={{ padding: '0.85rem 1rem' }}>
-                  <span style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.2rem 0.55rem', borderRadius: '2px', background: 'rgba(242,169,0,0.15)', color: '#F2A900', border: '1px solid rgba(242,169,0,0.25)' }}>
-                    {j.ranking_etiqueta}
-                  </span>
-                </td>
-                <td style={{ padding: '0.85rem 1rem' }}>
-                  <span style={{ fontSize: '0.65rem', padding: '0.2rem 0.55rem', borderRadius: '2px', background: j.activo ? 'rgba(0,122,51,0.15)' : 'rgba(200,16,46,0.15)', color: j.activo ? '#4CAF7D' : '#ff7a85', border: `1px solid ${j.activo ? 'rgba(0,122,51,0.25)' : 'rgba(200,16,46,0.25)'}` }}>
-                    {j.activo ? 'Activo' : 'Inactivo'}
-                  </span>
-                </td>
-                <td style={{ padding: '0.85rem 1rem', color: '#555', fontSize: '0.82rem', fontFamily: 'monospace' }}>{j.orden}</td>
-                <td style={{ padding: '0.85rem 1rem' }}>
-                  <div style={{ display: 'flex', gap: '0.4rem' }}>
-                    <button onClick={() => handleEdit(j)} style={{ width: '28px', height: '28px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#888', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>✎</button>
-                    <button onClick={() => handleDelete(j.id)} style={{ width: '28px', height: '28px', background: 'transparent', border: '1px solid rgba(200,16,46,0.25)', color: '#C8102E', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>✕</button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {jugadores.length === 0 && (
-              <tr><td colSpan={7} style={{ padding: '3rem', textAlign: 'center', color: '#555', fontSize: '0.82rem' }}>No hay jugadores registrados</td></tr>
+            {jugadoresFiltrados.map(j => {
+              const ci = catInfo(j.categoria)
+              return (
+                <tr key={j.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <td style={{ padding: '0.85rem 1rem' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '6px', overflow: 'hidden', background: 'linear-gradient(145deg, #1a0508, #3d0f17)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {j.foto_url
+                        ? <img src={j.foto_url} alt={j.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+                        : <span style={{ fontFamily: 'serif', fontSize: '0.8rem', color: 'rgba(255,255,255,0.2)' }}>{j.iniciales}</span>
+                      }
+                    </div>
+                  </td>
+                  <td style={{ padding: '0.85rem 1rem' }}>
+                    <div style={{ color: '#F0EEE8', fontWeight: 500, fontSize: '0.84rem' }}>{j.nombre} {j.apellido}</div>
+                    <div style={{ color: '#555', fontSize: '0.72rem', marginTop: '0.1rem' }}>{j.nacionalidad}</div>
+                  </td>
+                  <td style={{ padding: '0.85rem 1rem' }}>
+                    <span style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.2rem 0.55rem', borderRadius: '2px', background: `${ci.color}15`, color: ci.color, border: `1px solid ${ci.color}35` }}>
+                      {ci.label}
+                    </span>
+                  </td>
+                  <td style={{ padding: '0.85rem 1rem' }}>
+                    <span style={{ fontSize: '0.65rem', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.2rem 0.55rem', borderRadius: '2px', background: 'rgba(242,169,0,0.15)', color: '#F2A900', border: '1px solid rgba(242,169,0,0.25)' }}>
+                      {j.ranking_etiqueta || '—'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '0.85rem 1rem' }}>
+                    <span style={{ fontSize: '0.65rem', padding: '0.2rem 0.55rem', borderRadius: '2px', background: j.activo ? 'rgba(0,122,51,0.15)' : 'rgba(200,16,46,0.15)', color: j.activo ? '#4CAF7D' : '#ff7a85', border: `1px solid ${j.activo ? 'rgba(0,122,51,0.25)' : 'rgba(200,16,46,0.25)'}` }}>
+                      {j.activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '0.85rem 1rem', color: '#555', fontSize: '0.82rem', fontFamily: 'monospace' }}>{j.orden}</td>
+                  <td style={{ padding: '0.85rem 1rem' }}>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      <button onClick={() => handleEdit(j)} style={{ width: '28px', height: '28px', background: 'transparent', border: '1px solid rgba(255,255,255,0.12)', color: '#888', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>✎</button>
+                      <button onClick={() => handleDelete(j.id)} style={{ width: '28px', height: '28px', background: 'transparent', border: '1px solid rgba(200,16,46,0.25)', color: '#C8102E', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}>✕</button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+            {jugadoresFiltrados.length === 0 && (
+              <tr><td colSpan={7} style={{ padding: '3rem', textAlign: 'center', color: '#555', fontSize: '0.82rem' }}>No hay jugadores en esta categoría</td></tr>
             )}
           </tbody>
         </table>
@@ -175,14 +214,27 @@ export default function JugadoresPage() {
               <button onClick={() => setShowForm(false)} style={{ background: 'transparent', border: 'none', color: '#888', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
             </div>
 
+            {/* CATEGORÍA */}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={lbl}>Categoría</label>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {CATEGORIAS.map(cat => (
+                  <button key={cat.value} onClick={() => setForm({ ...form, categoria: cat.value })}
+                    style={{ padding: '0.45rem 1rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 500, border: `1px solid ${form.categoria === cat.value ? cat.color : 'rgba(255,255,255,0.1)'}`, background: form.categoria === cat.value ? `${cat.color}20` : 'transparent', color: form.categoria === cat.value ? cat.color : '#555', transition: 'all 0.15s' }}>
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* FOTO */}
-            <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: '1.25rem' }}>
               <label style={lbl}>Foto del jugador</label>
               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <div style={{ width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', background: 'linear-gradient(145deg, #1a0508, #3d0f17)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: '70px', height: '70px', borderRadius: '8px', overflow: 'hidden', background: 'linear-gradient(145deg, #1a0508, #3d0f17)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   {form.foto_url
                     ? <img src={form.foto_url} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
-                    : <span style={{ fontFamily: 'serif', fontSize: '1.5rem', color: 'rgba(255,255,255,0.15)' }}>{form.iniciales || '?'}</span>
+                    : <span style={{ fontFamily: 'serif', fontSize: '1.2rem', color: 'rgba(255,255,255,0.15)' }}>{form.iniciales || '?'}</span>
                   }
                 </div>
                 <div style={{ flex: 1 }}>
@@ -192,7 +244,7 @@ export default function JugadoresPage() {
                     {uploading ? 'Subiendo...' : '↑ Seleccionar foto'}
                   </button>
                   <input value={form.foto_url} onChange={e => setForm({ ...form, foto_url: e.target.value })}
-                    placeholder="O pega una URL de imagen" style={inp({ fontSize: '0.75rem' })}/>
+                    placeholder="O pega una URL" style={inp({ fontSize: '0.75rem' })}/>
                 </div>
               </div>
             </div>
@@ -207,16 +259,16 @@ export default function JugadoresPage() {
               <div style={{ gridColumn: '1/-1' }}>
                 <label style={lbl}>Descripción corta</label>
                 <textarea value={form.descripcion_corta} onChange={e => setForm({ ...form, descripcion_corta: e.target.value })}
-                  style={{ ...inp(), minHeight: '80px', resize: 'vertical' as const }}/>
+                  style={{ ...inp(), minHeight: '70px', resize: 'vertical' as const }}/>
               </div>
               <div style={{ gridColumn: '1/-1' }}>
                 <label style={lbl}>Biografía</label>
                 <textarea value={form.biografia} onChange={e => setForm({ ...form, biografia: e.target.value })}
-                  style={{ ...inp(), minHeight: '80px', resize: 'vertical' as const }}/>
+                  style={{ ...inp(), minHeight: '70px', resize: 'vertical' as const }}/>
               </div>
               <div>
                 <label style={lbl}>Orden</label>
-                <input type="number" value={form.orden} onChange={e => setForm({ ...form, orden: parseInt(e.target.value) })} style={inp()}/>
+                <input type="number" value={form.orden} onChange={e => setForm({ ...form, orden: parseInt(e.target.value) || 0 })} style={inp()}/>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingTop: '1.2rem' }}>
                 <input type="checkbox" checked={form.activo} onChange={e => setForm({ ...form, activo: e.target.checked })} style={{ width: '16px', height: '16px', accentColor: '#007A33' }}/>
