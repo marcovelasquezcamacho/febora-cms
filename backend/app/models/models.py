@@ -254,3 +254,12 @@ class MensajeContacto(Base):
     mensaje     = Column(Text, nullable=False)
     leido       = Column(Boolean, default=False)
     created_at  = Column(DateTime, default=datetime.utcnow)
+
+class HeroImagen(Base):
+    __tablename__ = "hero_imagenes"
+    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    imagen_url = Column(String(500), nullable=False)
+    orden      = Column(Integer, default=0)
+    activo     = Column(Boolean, default=True)
+    updated_by = Column(UUID(as_uuid=True), ForeignKey("admin_users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
