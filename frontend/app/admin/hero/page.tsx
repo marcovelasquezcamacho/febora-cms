@@ -14,12 +14,18 @@ const emptyForm = {
 
 export default function HeroAdminPage() {
   const [form, setForm] = useState(emptyForm)
+  const [imagenes, setImagenes] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadingImg, setUploadingImg] = useState(false)
   const [msg, setMsg] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
+  const fileImgRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { loadHero() }, [])
+  useEffect(() => {
+    loadHero()
+    loadImagenes()
+  }, [])
 
   const loadHero = async () => {
     try {
@@ -28,12 +34,19 @@ export default function HeroAdminPage() {
     } catch {}
   }
 
+  const loadImagenes = async () => {
+    try {
+      const { data } = await api.get('/api/hero/imagenes')
+      setImagenes(data)
+    } catch {}
+  }
+
   const notify = (text: string) => {
     setMsg(text)
     setTimeout(() => setMsg(''), 3000)
   }
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadFondo = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
@@ -43,14 +56,41 @@ export default function HeroAdminPage() {
       const { data } = await api.post('/api/media/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
-      const fullUrl = data.url
-      setForm(prev => ({ ...prev, imagen_fondo_url: fullUrl }))
+      setForm(prev => ({ ...prev, imagen_fondo_url: data.url }))
       notify('Imagen subida correctamente')
-    } catch {
-      notify('Error al subir la imagen')
-    } finally {
-      setUploading(false)
-    }
+    } catch { notify('Error al subir') }
+    finally { setUploading(false) }
+  }
+
+  const handleUploadCarrusel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (imagenes.length >= 5) { notify('Máximo 5 imágenes permitidas'); return }
+    setUploadingImg(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const { data: mediaData } = await api.post('/api/media/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      await api.post('/api/hero/imagenes', {
+        imagen_url: mediaData.url,
+        orden: imagenes.length,
+        activo: true
+      })
+      notify('Imagen del carrusel agregada')
+      loadImagenes()
+    } catch { notify('Error al subir imagen') }
+    finally { setUploadingImg(false) }
+  }
+
+  const handleDeleteImagen = async (id: string) => {
+    if (!confirm('¿Eliminar esta imagen del carrusel?')) return
+    try {
+      await api.delete(`/api/hero/imagenes/${id}`)
+      notify('Imagen eliminada')
+      loadImagenes()
+    } catch { notify('Error al eliminar') }
   }
 
   const handleSave = async () => {
@@ -58,11 +98,8 @@ export default function HeroAdminPage() {
     try {
       await api.put('/api/hero/', form)
       notify('Hero actualizado correctamente')
-    } catch {
-      notify('Error al guardar')
-    } finally {
-      setLoading(false)
-    }
+    } catch { notify('Error al guardar') }
+    finally { setLoading(false) }
   }
 
   const inp = (style = {}) => ({
@@ -79,7 +116,7 @@ export default function HeroAdminPage() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
         <div>
           <h1 style={{ fontFamily: 'serif', fontSize: '2rem', letterSpacing: '0.06em', color: '#F0EEE8', marginBottom: '0.2rem' }}>HERO PRINCIPAL</h1>
-          <p style={{ fontSize: '0.78rem', color: '#555' }}>Imagen y textos del banner principal</p>
+          <p style={{ fontSize: '0.78rem', color: '#555' }}>Textos, colores e imágenes del banner principal</p>
         </div>
         <button onClick={handleSave} disabled={loading}
           style={{ background: '#C8102E', color: '#fff', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>
@@ -89,40 +126,70 @@ export default function HeroAdminPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
 
-        {/* IMAGEN DESTACADA */}
+        {/* CARRUSEL DE IMÁGENES */}
         <div style={{ gridColumn: '1/-1', background: '#141414', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '1.5rem' }}>
-          <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#555', marginBottom: '1rem' }}>Imagen de fondo destacada</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: '1.5rem', alignItems: 'start' }}>
-            <div style={{ aspectRatio: '16/9', background: '#0B0B0B', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <div>
+              <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#555' }}>Imágenes del carrusel</div>
+              <div style={{ fontSize: '0.72rem', color: '#444', marginTop: '0.2rem' }}>{imagenes.length}/5 imágenes — se rotan automáticamente cada 5 segundos</div>
+            </div>
+            {imagenes.length < 5 && (
+              <>
+                <input ref={fileImgRef} type="file" accept="image/*" onChange={handleUploadCarrusel} style={{ display: 'none' }}/>
+                <button onClick={() => fileImgRef.current?.click()} disabled={uploadingImg}
+                  style={{ background: '#1C1C1C', border: '1px solid rgba(255,255,255,0.15)', color: '#F0EEE8', padding: '0.55rem 1.1rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 500 }}>
+                  {uploadingImg ? '↑ Subiendo...' : '+ Agregar imagen'}
+                </button>
+              </>
+            )}
+          </div>
+
+          {imagenes.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3rem', border: '1px dashed rgba(255,255,255,0.1)', borderRadius: '8px', color: '#444', fontSize: '0.82rem' }}>
+              No hay imágenes en el carrusel. Agrega hasta 5 imágenes.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.75rem' }}>
+              {imagenes.map((img, i) => (
+                <div key={img.id} style={{ position: 'relative', aspectRatio: '16/9', borderRadius: '6px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <img src={img.imagen_url} alt={`Imagen ${i+1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', opacity: 0, transition: 'opacity 0.2s' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.opacity = '1'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.opacity = '0'}>
+                    <div style={{ background: '#C8102E', color: '#fff', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontFamily: 'monospace' }}>{i+1}</div>
+                    <button onClick={() => handleDeleteImagen(img.id)}
+                      style={{ background: 'rgba(200,16,46,0.8)', border: 'none', color: '#fff', padding: '0.3rem 0.7rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem' }}>
+                      Eliminar
+                    </button>
+                  </div>
+                  <div style={{ position: 'absolute', top: '0.4rem', left: '0.4rem', background: 'rgba(0,0,0,0.6)', color: '#F2A900', fontSize: '0.6rem', padding: '0.15rem 0.4rem', borderRadius: '2px', fontFamily: 'monospace' }}>
+                    {i+1}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* IMAGEN DE FONDO (fallback) */}
+        <div style={{ gridColumn: '1/-1', background: '#141414', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '1.5rem' }}>
+          <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#555', marginBottom: '0.4rem' }}>Imagen de fondo fallback</div>
+          <div style={{ fontSize: '0.72rem', color: '#444', marginBottom: '1rem' }}>Se usa cuando no hay imágenes en el carrusel</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '1.5rem', alignItems: 'start' }}>
+            <div style={{ aspectRatio: '16/9', background: '#0B0B0B', borderRadius: '8px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {form.imagen_fondo_url
                 ? <img src={form.imagen_fondo_url} alt="Hero" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
-                : <div style={{ textAlign: 'center', color: '#333' }}>
-                    <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🖼</div>
-                    <div style={{ fontSize: '0.72rem', letterSpacing: '0.08em' }}>Sin imagen</div>
-                  </div>
+                : <div style={{ textAlign: 'center', color: '#333', fontSize: '0.72rem' }}>Sin imagen</div>
               }
             </div>
             <div>
-              <input ref={fileRef} type="file" accept="image/*" onChange={handleUpload} style={{ display: 'none' }}/>
+              <input ref={fileRef} type="file" accept="image/*" onChange={handleUploadFondo} style={{ display: 'none' }}/>
               <button onClick={() => fileRef.current?.click()} disabled={uploading}
-                style={{ background: '#1C1C1C', border: '1px solid rgba(255,255,255,0.15)', color: '#F0EEE8', padding: '0.7rem 1.2rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.82rem', marginBottom: '0.75rem', width: '100%', fontWeight: 500 }}>
-                {uploading ? '↑ Subiendo imagen...' : '↑ Subir imagen de fondo'}
+                style={{ background: '#1C1C1C', border: '1px solid rgba(255,255,255,0.15)', color: '#F0EEE8', padding: '0.6rem 1.2rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem', marginBottom: '0.5rem', width: '100%' }}>
+                {uploading ? '↑ Subiendo...' : '↑ Subir imagen fallback'}
               </button>
-              <div style={{ marginBottom: '0.5rem' }}>
-                <label style={lbl}>O pega una URL de imagen</label>
-                <input value={form.imagen_fondo_url} onChange={e => setForm({ ...form, imagen_fondo_url: e.target.value })}
-                  placeholder="https://..." style={inp()}/>
-              </div>
-              <div style={{ fontSize: '0.72rem', color: '#444', lineHeight: 1.6 }}>
-                Formatos: JPG, PNG, WebP — Máximo 5MB<br/>
-                Recomendado: 1920×1080px o superior
-              </div>
-              {form.imagen_fondo_url && (
-                <button onClick={() => setForm({ ...form, imagen_fondo_url: '' })}
-                  style={{ background: 'transparent', border: '1px solid rgba(200,16,46,0.25)', color: '#C8102E', padding: '0.4rem 0.9rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.72rem', marginTop: '0.75rem' }}>
-                  ✕ Quitar imagen
-                </button>
-              )}
+              <input value={form.imagen_fondo_url} onChange={e => setForm({ ...form, imagen_fondo_url: e.target.value })}
+                placeholder="O pega una URL" style={inp({ fontSize: '0.75rem' })}/>
             </div>
           </div>
         </div>
@@ -130,11 +197,9 @@ export default function HeroAdminPage() {
         {/* BADGE */}
         <div style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '1.5rem' }}>
           <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#555', marginBottom: '1rem' }}>Badge superior</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div>
-              <label style={lbl}>Texto</label>
-              <input value={form.badge_texto} onChange={e => setForm({ ...form, badge_texto: e.target.value })} style={inp()}/>
-            </div>
+          <div>
+            <label style={lbl}>Texto</label>
+            <input value={form.badge_texto} onChange={e => setForm({ ...form, badge_texto: e.target.value })} style={inp()}/>
           </div>
         </div>
 
@@ -166,64 +231,23 @@ export default function HeroAdminPage() {
         <div style={{ gridColumn: '1/-1', background: '#141414', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '1.5rem' }}>
           <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#555', marginBottom: '1rem' }}>Subtítulo</div>
           <textarea value={form.subtitulo} onChange={e => setForm({ ...form, subtitulo: e.target.value })}
-            style={{ ...inp(), minHeight: '80px', resize: 'vertical' as const }}/>
+            style={{ ...inp(), minHeight: '70px', resize: 'vertical' as const }}/>
         </div>
 
         {/* BOTONES */}
         <div style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '1.5rem' }}>
           <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#555', marginBottom: '1rem' }}>Botón primario</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div>
-              <label style={lbl}>Texto</label>
-              <input value={form.btn_primario_label} onChange={e => setForm({ ...form, btn_primario_label: e.target.value })} style={inp()}/>
-            </div>
-            <div>
-              <label style={lbl}>URL</label>
-              <input value={form.btn_primario_url} onChange={e => setForm({ ...form, btn_primario_url: e.target.value })} style={inp()}/>
-            </div>
+            <div><label style={lbl}>Texto</label><input value={form.btn_primario_label} onChange={e => setForm({ ...form, btn_primario_label: e.target.value })} style={inp()}/></div>
+            <div><label style={lbl}>URL</label><input value={form.btn_primario_url} onChange={e => setForm({ ...form, btn_primario_url: e.target.value })} style={inp()}/></div>
           </div>
         </div>
 
         <div style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '1.5rem' }}>
           <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#555', marginBottom: '1rem' }}>Botón secundario</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div>
-              <label style={lbl}>Texto</label>
-              <input value={form.btn_secundario_label} onChange={e => setForm({ ...form, btn_secundario_label: e.target.value })} style={inp()}/>
-            </div>
-            <div>
-              <label style={lbl}>URL</label>
-              <input value={form.btn_secundario_url} onChange={e => setForm({ ...form, btn_secundario_url: e.target.value })} style={inp()}/>
-            </div>
-          </div>
-        </div>
-
-        {/* PREVIEW */}
-        <div style={{ gridColumn: '1/-1', background: '#141414', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '1.5rem' }}>
-          <div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#555', marginBottom: '1rem' }}>Vista previa</div>
-          <div style={{ background: '#0B0B0B', borderRadius: '8px', padding: '3rem 2rem', position: 'relative', overflow: 'hidden', minHeight: '220px', display: 'flex', alignItems: 'center' }}>
-            {form.imagen_fondo_url && (
-              <img src={form.imagen_fondo_url} alt="bg" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.3 }}/>
-            )}
-            <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 80% 60% at 70% 50%, rgba(200,16,46,0.18) 0%, transparent 60%)' }}/>
-            <div style={{ position: 'absolute', top: 0, right: 0, width: '4px', height: '100%', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ background: '#C8102E', flex: 1 }}/><div style={{ background: '#F2A900', flex: 1 }}/><div style={{ background: '#007A33', flex: 1 }}/>
-            </div>
-            <div style={{ position: 'relative', zIndex: 2 }}>
-              {form.badge_texto && (
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.62rem', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#F2A900', border: '1px solid rgba(242,169,0,0.35)', padding: '0.3rem 0.75rem', borderRadius: '2px', marginBottom: '0.75rem' }}>
-                  <span style={{ width: '5px', height: '5px', background: '#F2A900', borderRadius: '50%', display: 'inline-block' }}/>{form.badge_texto}
-                </div>
-              )}
-              <div style={{ fontFamily: "'Bebas Neue', serif", fontSize: '3rem', lineHeight: 0.95, letterSpacing: '0.02em' }}>
-                <span style={{ color: form.color_linea1, display: 'block' }}>{form.titulo_linea1 || 'LÍNEA 1'}</span>
-                <span style={{ color: form.color_linea2, display: 'block' }}>{form.titulo_linea2 || 'LÍNEA 2'}</span>
-                <span style={{ color: form.color_linea3, display: 'block' }}>{form.titulo_linea3 || 'LÍNEA 3'}</span>
-              </div>
-              {form.subtitulo && (
-                <p style={{ fontSize: '0.8rem', color: 'rgba(250,250,248,0.55)', maxWidth: '400px', lineHeight: 1.6, marginTop: '0.75rem', fontWeight: 300 }}>{form.subtitulo.substring(0, 100)}...</p>
-              )}
-            </div>
+            <div><label style={lbl}>Texto</label><input value={form.btn_secundario_label} onChange={e => setForm({ ...form, btn_secundario_label: e.target.value })} style={inp()}/></div>
+            <div><label style={lbl}>URL</label><input value={form.btn_secundario_url} onChange={e => setForm({ ...form, btn_secundario_url: e.target.value })} style={inp()}/></div>
           </div>
         </div>
 
