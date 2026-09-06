@@ -4,21 +4,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.database import Base, engine
 from app.models import models
-from app.routers import auth, hero, estadisticas, jugadores, noticias, logros, nosotros, cta, footer, media, popups, galeria, sponsors, usuarios, contacto
+from app.routers import auth, hero, estadisticas, jugadores, noticias, logros, nosotros, cta, footer, media, popups, galeria, sponsors, usuarios, contacto, videos
 
 Base.metadata.create_all(bind=engine)
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")
-allowed_origins = [o.strip() for o in origins_env.split(",")]
-
 app = FastAPI(
     title="FEBORA CMS API",
     description="API de administracion de la landing page de FEBORA",
     version="1.0.0",
 )
+
+origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000")
+allowed_origins = [o.strip() for o in origins_env.split(",")]
 
 app.add_middleware(
     CORSMiddleware,
@@ -45,6 +45,7 @@ app.include_router(galeria.router,      prefix="/api/galeria",      tags=["Galer
 app.include_router(sponsors.router,     prefix="/api/sponsors",     tags=["Sponsors"])
 app.include_router(usuarios.router,     prefix="/api/usuarios",     tags=["Usuarios"])
 app.include_router(contacto.router,     prefix="/api/contacto",     tags=["Contacto"])
+app.include_router(videos.router,       prefix="/api/videos",       tags=["Videos"])
 
 @app.get("/", tags=["Health"])
 def health():
