@@ -263,3 +263,18 @@ class HeroImagen(Base):
     activo     = Column(Boolean, default=True)
     updated_by = Column(UUID(as_uuid=True), ForeignKey("admin_users.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class Video(Base):
+    __tablename__ = "videos"
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    titulo      = Column(String(300), nullable=False)
+    descripcion = Column(Text)
+    youtube_url = Column(String(500), nullable=False)
+    youtube_id    = Column(String(50))
+    miniatura_url = Column(String(500))
+    plataforma    = Column(String(20), default="youtube")
+    orden       = Column(Integer, default=0)
+    visible     = Column(Boolean, default=True)
+    updated_by  = Column(UUID(as_uuid=True), ForeignKey("admin_users.id"))
+    created_at  = Column(DateTime, default=datetime.utcnow)
+    updated_at  = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
